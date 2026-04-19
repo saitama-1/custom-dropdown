@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dropdown Tuỳ Chỉnh</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        background: #f5f7fb;
+      }
+
+      /* Container chính của dropdown */
+      .custom-dropdown {
+        position: relative;
+        width: 280px;
+        user-select: none;
+      }
+
+      /* Ô hiển thị giá trị hiện tại (nút bấm) */
+      .dropdown-button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: white;
+        border: 1px solid #d0d5dd;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+        font-size: 15px;
+        color: #1e293b;
+        transition: all 0.2s ease;
+      }
+
+      .dropdown-button:hover {
+        border-color: #9aa4b2;
+        background: #fafbfc;
+      }
+
+      /* Placeholder style khi chưa chọn mục nào */
+      .dropdown-button .placeholder {
+        color: #94a3b8;
+      }
+
+      /* Mũi tên dropdown (▼) */
+      .arrow {
+        color: #64748b;
+        font-size: 16px;
+        transition: transform 0.2s;
+      }
+
+      /* Khi dropdown mở, xoay mũi tên */
+      .custom-dropdown.open .arrow {
+        transform: rotate(180deg);
+      }
+
+      /* Danh sách lựa chọn (menu thả xuống) */
+      .dropdown-menu {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        width: 100%;
+        background: white;
+        border: 1px solid #d0d5dd;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        list-style: none;
+        margin: 0;
+        padding: 4px 0;
+        z-index: 10;
+        max-height: 260px;
+        overflow-y: auto;
+
+        /* Ẩn mặc định */
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-8px);
+        transition:
+          opacity 0.15s,
+          visibility 0.15s,
+          transform 0.15s;
+      }
+
+      /* Hiển thị menu khi dropdown có class 'open' */
+      .custom-dropdown.open .dropdown-menu {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+
+      /* Mỗi mục trong danh sách */
+      .dropdown-item {
+        padding: 10px 16px;
+        cursor: pointer;
+        font-size: 15px;
+        color: #1e293b;
+        transition: background 0.1s;
+      }
+
+      .dropdown-item:hover {
+        background: #f1f5f9;
+      }
+
+      /* Mục đang được chọn (highlight) */
+      .dropdown-item.selected {
+        background: #eef2ff;
+        color: #1d4ed8;
+        font-weight: 500;
+        position: relative;
+      }
+
+      /* Dấu check nhỏ cho mục đã chọn (tuỳ chọn) */
+      .dropdown-item.selected::after {
+        content: "✓";
+        position: absolute;
+        right: 16px;
+        color: #1d4ed8;
+        font-weight: 600;
+      }
+
+      /* Trạng thái khi không có mục nào được chọn – placeholder */
+      .dropdown-button:not(.has-selection) .selected-text {
+        color: #94a3b8;
+      }
+
+      /* Văn bản hiển thị mục đã chọn trên nút */
+      .selected-text {
+        color: #0f172a;
+        font-weight: 500;
+      }
+
+
+    </style>
+  </head>
+  <body>
+    <div class="custom-dropdown" id="dropdown1">
+      <!-- Nút hiển thị giá trị hiện tại -->
+      <div class="dropdown-button" id="dropdownButton">
+        <span class="selected-text placeholder">Chọn một mục</span>
+        <span class="arrow">▼</span>
+      </div>
+
+      <!-- Danh sách lựa chọn (menu) -->
+      <ul class="dropdown-menu" id="dropdownMenu">
+        <li class="dropdown-item" data-value="first">Mục thứ nhất</li>
+        <li class="dropdown-item" data-value="second">Mục thứ hai</li>
+        <li class="dropdown-item" data-value="third">Mục thứ ba</li>
+        <li class="dropdown-item" data-value="fourth">Mục thứ tư</li>
+        <li class="dropdown-item" data-value="fifth">Mục thứ năm</li>
+      </ul>
+    </div>
+
+    <script>
+      (function () {
+        // --- Các phần tử DOM ---
+        const dropdown = document.getElementById("dropdown1");
+        const button = document.getElementById("dropdownButton");
+        const menu = document.getElementById("dropdownMenu");
+        const items = menu.querySelectorAll(".dropdown-item");
+        const selectedTextSpan = button.querySelector(".selected-text");
+
+        // Biến lưu trạng thái
+        let selectedValue = null; // giá trị data-value của mục đã chọn
+        let selectedText = ""; // text hiển thị
+
+        // --- Hàm cập nhật UI dựa trên trạng thái đã chọn ---
+        function updateButtonDisplay() {
+          if (selectedValue) {
+            // Có mục được chọn -> hiển thị text, bỏ class placeholder
+            selectedTextSpan.textContent = selectedText;
+            selectedTextSpan.classList.remove("placeholder");
+            button.classList.add("has-selection");
+          } else {
+            // Không có mục được chọn -> hiển thị placeholder
+            selectedTextSpan.textContent = "Chọn một mục";
+            selectedTextSpan.classList.add("placeholder");
+            button.classList.remove("has-selection");
+          }
+        }
+
+        // Cập nhật trạng thái "selected" cho các item trong menu
+        function highlightSelectedItem() {
+          items.forEach((item) => {
+            const itemValue = item.getAttribute("data-value");
+            if (itemValue === selectedValue) {
+              item.classList.add("selected");
+            } else {
+              item.classList.remove("selected");
+            }
+          });
+        }
+
+        // Đóng dropdown
+        function closeDropdown() {
+          dropdown.classList.remove("open");
+        }
+
+        // Mở dropdown
+        function openDropdown() {
+          dropdown.classList.add("open");
+        }
+
+        // Xử lý khi click chọn một mục
+        function handleItemClick(item) {
+          const newValue = item.getAttribute("data-value");
+          const newText = item.textContent;
+
+          // Cập nhật biến toàn cục
+          selectedValue = newValue;
+          selectedText = newText;
+
+          // Cập nhật giao diện
+          updateButtonDisplay();
+          highlightSelectedItem();
+
+          // Đóng dropdown
+          closeDropdown();
+        }
+
+        // --- Gắn sự kiện ---
+
+        // Click vào nút để toggle mở/đóng dropdown
+        button.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (dropdown.classList.contains("open")) {
+            closeDropdown();
+          } else {
+            openDropdown();
+            // Đảm bảo highlight item đã chọn khi mở (đề phòng thay đổi từ bên ngoài)
+            highlightSelectedItem();
+          }
+        });
+
+        // Gắn sự kiện cho từng item
+        items.forEach((item) => {
+          item.addEventListener("click", (e) => {
+            e.stopPropagation();
+            handleItemClick(item);
+          });
+        });
+
+        // Đóng dropdown khi click ra ngoài
+        document.addEventListener("click", (e) => {
+          // Nếu click không nằm trong dropdown container thì đóng
+          if (!dropdown.contains(e.target)) {
+            closeDropdown();
+          }
+        });
+
+        // Đóng dropdown khi nhấn phím Escape
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && dropdown.classList.contains("open")) {
+            closeDropdown();
+          }
+        });
+
+        // --- Khởi tạo trạng thái mặc định (không có lựa chọn) ---
+        updateButtonDisplay();
+        highlightSelectedItem(); // đảm bảo không có item nào được highlight ban đầu
+      })();
+    </script>
+  </body>
+</html>
